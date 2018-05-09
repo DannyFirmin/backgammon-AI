@@ -78,7 +78,7 @@ instance Show Board where
           totalBar :: Int
           totalBar = wBar b + bBar b
           barString :: String
-          barString = replicate (wBar b) 'x' ++ replicate (bBar b) 'o'
+          barString = replicate (wBar b) 'o' ++ replicate (bBar b) 'x'
       pointToString :: Point -> Int -> Bool -> String
       pointToString p i t =
         case p of
