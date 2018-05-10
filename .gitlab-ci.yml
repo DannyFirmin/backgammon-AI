@@ -1,0 +1,11 @@
+image: anucecsit/comp1100tournament
+
+stages:
+    - deploy
+
+tournament: 
+    stage: deploy
+    tags:
+        - comp1100tournament
+    script:
+        - /scripts/submit.sh
