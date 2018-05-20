@@ -35,20 +35,39 @@ greedyBot s f =
 
 greedyHeuristics :: State -> Move
 greedyHeuristics s@(State st (Board pt wb bb) tn ml wp bp ws bs)
- |ml /= [] && isLegalMove s ((findFurthest pt),head ml)= ((findFurthest pt),(head ml))
+ |detectBolt pt /= 6611178 && goToPoint (detectBolt pt) (legalMoves s) /= (6611178,6611178) = goToPoint (detectBolt pt) (legalMoves s)
+ |ml /= [] && isLegalMove s (findFurthest pt,head ml)= (findFurthest pt,head ml)
  |otherwise =  head (legalMoves s)
 
 findFurthest :: [Point] -> Int
 findFurthest pt =
- case elemIndices White (fst(unzip(reverse (convertertt  pt)))) of
-  x:xs -> 24 - head(elemIndices White (fst(unzip(reverse (convertertt  pt)))))
+ case elemIndices White (map fst(reverse (cancelMaybe pt))) of
+
+  x:xs -> 24 - head(elemIndices White (map fst(reverse (cancelMaybe pt))))
   [] -> 24
 
-convertertt::[Point]->[(Player, Int)]
-convertertt list = case list of
+cancelMaybe::[Point]->[(Player, Int)]
+cancelMaybe list = case list of
  [] -> []
- (Nothing:xs) -> (Black,0):convertertt xs
- (Just x:xs) -> x:convertertt xs
+ (Nothing:xs) -> (Black,0):cancelMaybe xs
+ (Just x:xs) -> x:cancelMaybe xs
+
+--give a position you want to go, then give the move that you can go there (14,4)
+goToPoint :: Int -> Moves -> Move
+goToPoint p (x:xs)
+ |fst x - snd x == p  = x
+ |fst x - snd x /= p = goToPoint p xs
+ |otherwise = (6611178,6611178)
+goToPoint _ _ = (6611178,6611178)
+
+--a position that can bolt black
+
+-- (a,b)
+-- |fst(a,b)-snd(a,b)==9 = (a,b)
+detectBolt :: [Point] -> Int
+detectBolt pt
+  |Just(White,1) `elem` pt = 1 + head(elemIndices (Just(White,1)) pt)
+  |otherwise = 6611178
 
 scoreState :: State -> Int
 scoreState s@(State _ (Board pt wb bb) tn ml wp bp ws bs) =
@@ -56,7 +75,6 @@ scoreState s@(State _ (Board pt wb bb) tn ml wp bp ws bs) =
     0 -> 0
     _ -> 100
 
-   --if b@(Board pt wb bb)
 
 stateCompare :: State -> State -> State
 stateCompare s1 s2
