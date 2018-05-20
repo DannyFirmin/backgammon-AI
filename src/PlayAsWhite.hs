@@ -35,7 +35,8 @@ greedyBot s f =
 
 greedyHeuristics :: State -> Move
 greedyHeuristics s@(State st (Board pt wb bb) tn ml wp bp ws bs)
- |detectBolt pt /= 6611178 && goToPoint (detectBolt pt) (legalMoves s) /= (6611178,6611178) = goToPoint (detectBolt pt) (legalMoves s)
+ |block pt /= 6611178 && goToPoint (block pt) (legalMoves s) /= (6611178,6611178) = goToPoint (block pt) (legalMoves s)
+ |blot pt /= 6611178 && goToPoint (blot pt) (legalMoves s) /= (6611178,6611178) = goToPoint (blot pt) (legalMoves s)
  |ml /= [] && isLegalMove s (findFurthest pt,head ml)= (findFurthest pt,head ml)
  |otherwise =  head (legalMoves s)
 
@@ -64,9 +65,14 @@ goToPoint _ _ = (6611178,6611178)
 
 -- (a,b)
 -- |fst(a,b)-snd(a,b)==9 = (a,b)
-detectBolt :: [Point] -> Int
-detectBolt pt
+block :: [Point] -> Int
+block pt
   |Just(White,1) `elem` pt = 1 + head(elemIndices (Just(White,1)) pt)
+  |otherwise = 6611178
+
+blot :: [Point] -> Int
+blot pt
+  |Just(Black,1) `elem` pt = 1 + head(elemIndices (Just(Black,1)) pt)
   |otherwise = 6611178
 
 scoreState :: State -> Int
