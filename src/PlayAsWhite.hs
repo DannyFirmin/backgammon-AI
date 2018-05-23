@@ -35,8 +35,8 @@ greedyBot s f =
 
 greedyHeuristics :: State -> Move
 greedyHeuristics s@(State st (Board pt wb bb) tn ml wp bp ws bs)
- |block pt /= 6611178 && goToPoint (block pt) (legalMoves s) /= (6611178,6611178) = goToPoint (block pt) (legalMoves s)
- |blot pt /= 6611178 && goToPoint (blot pt) (legalMoves s) /= (6611178,6611178) = goToPoint (blot pt) (legalMoves s)
+ |block pt /= [6611178] && goToPoint (block pt) (legalMoves s) /= (6611178,6611178) = goToPoint (block pt) (legalMoves s)
+ |blot pt /= [6611178] && goToPoint (blot pt) (legalMoves s) /= (6611178,6611178) = goToPoint (blot pt) (legalMoves s)
  |ml /= [] && isLegalMove s (findFurthest pt,head ml)= (findFurthest pt,head ml)
  |otherwise =  head (legalMoves s)
 
@@ -53,11 +53,16 @@ cancelMaybe list = case list of
  (Nothing:xs) -> (Black,0):cancelMaybe xs
  (Just x:xs) -> x:cancelMaybe xs
 
+
+
 --give a position you want to go, then give the move that you can go there (14,4)
-goToPoint :: Int -> Moves -> Move
+goToPoint :: [Int] -> Moves -> Move
 goToPoint p (x:xs)
- |fst x - snd x == p  = x
- |fst x - snd x /= p = goToPoint p xs
+--  |fst x - snd x == p  = x
+--  |fst x - snd x /= p = goToPoint p xs
+ |(fst x - snd x) `elem` p = x
+ |(fst x - snd x) `notElem` p = goToPoint p xs
+-- |[(a, b) | a <- (p:ps), b <- (x:xs), fst x - snd x == p]
  |otherwise = (6611178,6611178)
 goToPoint _ _ = (6611178,6611178)
 
@@ -65,15 +70,15 @@ goToPoint _ _ = (6611178,6611178)
 
 -- (a,b)
 -- |fst(a,b)-snd(a,b)==9 = (a,b)
-block :: [Point] -> Int
+block :: [Point] -> [Int]
 block pt
-  |Just(White,1) `elem` pt = 1 + head(elemIndices (Just(White,1)) pt)
-  |otherwise = 6611178
+  |Just(White,1) `elem` pt = map (+1)  (elemIndices (Just(White,1)) pt)
+  |otherwise = [6611178]
 
-blot :: [Point] -> Int
+blot :: [Point] -> [Int]
 blot pt
-  |Just(Black,1) `elem` pt = 1 + head(elemIndices (Just(Black,1)) pt)
-  |otherwise = 6611178
+  |Just(Black,1) `elem` pt = map (+1) (elemIndices (Just(Black,1)) pt)
+  |otherwise = [6611178]
 
 scoreState :: State -> Int
 scoreState s@(State _ (Board pt wb bb) tn ml wp bp ws bs) =
