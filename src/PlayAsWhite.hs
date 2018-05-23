@@ -11,7 +11,7 @@ makeMove :: State -> Lookahead -> Moves
 makeMove s l
   | primesUnder (l * l) < 0 = []
   | otherwise =
-      greedyBot s movesLeft
+      greedyBotV2 s movesLeft
 
 legalMoveBot::State ->  (State -> [Int]) -> Moves
 legalMoveBot s f =
@@ -33,6 +33,16 @@ greedyBot s f =
     s'::State
     s' = performSingleMove s (greedyHeuristics s)
 
+greedyBotV2 :: State -> (State -> [Int]) -> Moves
+greedyBotV2 s f =
+ case legalMoves s of
+    x:xs -> combine s:greedyBotV2 s' f
+    [] -> []
+
+    where
+    s'::State
+    s' = performSingleMove s (combine s)
+
 greedyHeuristics :: State -> Move
 greedyHeuristics s@(State st (Board pt wb bb) tn ml wp bp ws bs)
  |block pt /= [6611178] && goToPoint (block pt) (legalMoves s) /= (6611178,6611178) = goToPoint (block pt) (legalMoves s)
@@ -52,7 +62,6 @@ cancelMaybe list = case list of
  [] -> []
  (Nothing:xs) -> (Black,0):cancelMaybe xs
  (Just x:xs) -> x:cancelMaybe xs
-
 
 
 --give a position you want to go, then give the move that you can go there (14,4)
@@ -80,11 +89,27 @@ blot pt
   |Just(Black,1) `elem` pt = map (+1) (elemIndices (Just(Black,1)) pt)
   |otherwise = [6611178]
 
+
+
+
+--[(heuristic score, move)]
 scoreState :: State -> Int
-scoreState s@(State _ (Board pt wb bb) tn ml wp bp ws bs) =
-   case bb of
-    0 -> 0
-    _ -> 100
+scoreState s@(State st (Board pt wb bb) tn ml wp bp ws bs)
+  |wb > 0 = -100
+  |bb > 0 = 50
+  |bp - wp >= 24 = 100
+  |Just(White,1) `elem` pt = -50
+  |otherwise = 0
+
+listofMove :: State -> Moves -> [(Int,Move)]
+listofMove s@(State st (Board pt wb bb) tn ml wp bp ws bs) (m:ms) = (scoreState (performSingleMove s m),m):listofMove s ms
+listofMove s _ = [(0,head (legalMoves s))]
+
+bestMove :: [(Int,Move)] -> Move
+bestMove bm = snd(maximum bm)
+
+combine :: State -> Move
+combine s = bestMove(listofMove s (legalMoves s))
 
 
 stateCompare :: State -> State -> State
