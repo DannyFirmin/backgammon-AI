@@ -51,7 +51,7 @@ greedyHeuristics s@(State st (Board pt wb bb) tn ml wp bp ws bs)
  |block pt /= [6611178] && goToPoint (block pt) (legalMoves s) /= (6611178,6611178) = goToPoint (block pt) (legalMoves s)
  |blot pt /= [6611178] && goToPoint (blot pt) (legalMoves s) /= (6611178,6611178) = goToPoint (blot pt) (legalMoves s)
  |ml /= [] && isLegalMove s (findFurthest pt,head ml)= (findFurthest pt,head ml)
- |otherwise =  head (legalMoves s)
+ |otherwise =  bestMove(listofMove s (legalMoves s))
 
 findFurthest :: [Point] -> Int
 findFurthest pt =
@@ -101,7 +101,7 @@ scoreBeenEaten s@(State st (Board pt wb bb) tn ml wp bp ws bs)
 
 scoreEat :: State -> Int
 scoreEat s@(State st (Board pt wb bb) tn ml wp bp ws bs)
- |bb > 0 = 90
+ |bb > 0 = 100
  |otherwise = 0
 
 
@@ -113,19 +113,18 @@ scoreGoodMove s@(State st (Board pt wb bb) tn ml wp bp ws bs)
 scorePoint :: [Point] -> Int
 scorePoint (p:ps) = case p of
   Just(Black,1) -> 10 + scorePoint ps
-  Just(White,1) -> -100 + scorePoint ps
+  Just(White,1) -> -300 + scorePoint ps
   Just(White,2) -> 3 + scorePoint ps
-  Just(White,3) -> 2 + scorePoint ps
-  Just(White,4) -> 1 + scorePoint ps
   Just(White,n)
-            |n>=4 -> 0 + scorePoint ps
-  _ -> 0
+            |n>=7 -> 1 + scorePoint ps
 
+  _ -> 0
+scorePoint [] = 0
 
 
 -- This is actually the main heuristics for greedyBotV2, minimax and a-b punning.
 scoreState :: State -> Int
-scoreState s@(State st (Board pt wb bb) tn ml wp bp ws bs) = bPips s - wPips s + scoreBeenEaten s + scoreEat s + scoreGoodMove s + scorePoint pt
+scoreState s@(State st (Board pt wb bb) tn ml wp bp ws bs) = (bPips s - wPips s) + scoreBeenEaten s + scoreEat s + scoreGoodMove s + scorePoint pt
 
 listofMove :: State -> Moves -> [(Int,Move)]
 listofMove s@(State st (Board pt wb bb) tn ml wp bp ws bs) (m:ms) = (scoreState (performSingleMove s m),m):listofMove s ms
@@ -145,16 +144,15 @@ stateCompare s1 s2
   |otherwise = s1
 
 
---Minimax bot starts here. Inspired by Tony's lecture and his lecture code
--- data Tree (a,b) = Node (a,b) [Tree (a,b)]
+-- --Minimax bot starts here. Inspired by Tony's lecture and his lecture code
+-- data Tree a = Node a [Tree a]
 -- roseTree :: (a -> [a]) -> a -> Tree a
 -- roseTree fun a = Node a (map (roseTree fun) (fun a))
 --
--- treeElem :: State -> Moves -> [(State,Int)]
--- treeElem s (m:ms) = (s,scoreState (performSingleMove s m)):treeElem s ms
--- treeElem s _ = [(s,0)]
+-- treeElem :: State -> Moves -> [State]
+-- treeElem s (m:ms) =  performSingleMove s m:treeElem s ms
 --
--- gameTree :: (a) -> Tree (a,b)
+-- gameTree :: a -> Tree a
 -- gameTree = roseTree treeElem
 
 
