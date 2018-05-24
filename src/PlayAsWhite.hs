@@ -5,7 +5,8 @@ import Move
 import Data.List
 import Board
 import Player
---import Debug.Trace (trace,traceShowId)
+import Debug.Trace
+--(trace,traceShowId)
 
 makeMove :: State -> Lookahead -> Moves
 makeMove s l
@@ -36,7 +37,7 @@ greedyBotV1 s f =
 greedyBotV2 :: State -> (State -> [Int]) -> Moves
 greedyBotV2 s f =
  case legalMoves s of
-    x:xs -> combine s:greedyBotV2 s' f
+    x:xs -> traceShow s $ combine s:greedyBotV2 s' f
     [] -> []
 
     where
@@ -124,7 +125,7 @@ scorePoint [] = 0
 
 -- This is actually the main heuristics for greedyBotV2, minimax and a-b punning.
 scoreState :: State -> Int
-scoreState s@(State st (Board pt wb bb) tn ml wp bp ws bs) = (bPips s - wPips s) + scoreBeenEaten s + scoreEat s + scoreGoodMove s + scorePoint pt
+scoreState s@(State st (Board pt wb bb) tn ml wp bp ws bs) = (bp - wp) + scoreBeenEaten s + scoreEat s + scoreGoodMove s + scorePoint pt
 
 listofMove :: State -> Moves -> [(Int,Move)]
 listofMove s@(State st (Board pt wb bb) tn ml wp bp ws bs) (m:ms) = (scoreState (performSingleMove s m),m):listofMove s ms
@@ -144,7 +145,7 @@ stateCompare s1 s2
   |otherwise = s1
 
 
--- --Minimax bot starts here. Inspired by Tony's lecture and his lecture code
+--Minimax bot starts here. Inspired by Tony's lecture and his lecture code
 -- data Tree a = Node a [Tree a]
 -- roseTree :: (a -> [a]) -> a -> Tree a
 -- roseTree fun a = Node a (map (roseTree fun) (fun a))
@@ -152,9 +153,14 @@ stateCompare s1 s2
 -- treeElem :: State -> Moves -> [State]
 -- treeElem s (m:ms) =  performSingleMove s m:treeElem s ms
 --
--- gameTree :: a -> Tree a
--- gameTree = roseTree treeElem
-
+-- gameTree :: State -> Tree State
+-- gameTree s = Node s (map (legalMovesTree (map (performSingleMove s) (legalMovesTree s))))
+--
+-- winValue :: State -> Int
+-- winValue s@(State st (Board pt wb bb) tn ml wp bp ws bs)
+--  |wp == 0 = 1
+--  |bp == 0 = -1
+--  |otherwise =0
 
 
 --  |(Black,1) `elem` pt = (Black,1)!!pt
