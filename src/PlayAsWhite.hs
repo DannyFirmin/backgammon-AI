@@ -23,10 +23,10 @@ legalMoveBot s f =
    s' = performSingleMove s (head (legalMoves s))
 
 
-greedyBot :: State -> (State -> [Int]) -> Moves
-greedyBot s f =
+greedyBotV1 :: State -> (State -> [Int]) -> Moves
+greedyBotV1 s f =
  case legalMoves s of
-    x:xs -> greedyHeuristics s:greedyBot s' f
+    x:xs -> greedyHeuristics s:greedyBotV1 s' f
     [] -> []
 
     where
@@ -43,6 +43,9 @@ greedyBotV2 s f =
     s'::State
     s' = performSingleMove s (combine s)
 
+--This is the heuristics for my greedyBotV1,
+-- using my creative, simple but effective idea different from the evaluate idea that all the students have
+-- This is the heuristic only for the greedyBotV1
 greedyHeuristics :: State -> Move
 greedyHeuristics s@(State st (Board pt wb bb) tn ml wp bp ws bs)
  |block pt /= [6611178] && goToPoint (block pt) (legalMoves s) /= (6611178,6611178) = goToPoint (block pt) (legalMoves s)
@@ -57,6 +60,7 @@ findFurthest pt =
   x:xs -> 24 - head(elemIndices White (map fst(reverse (cancelMaybe pt))))
   [] -> 24
 
+--My friend Kalai helped me with this function to solve the maybe type issue
 cancelMaybe::[Point]->[(Player, Int)]
 cancelMaybe list = case list of
  [] -> []
@@ -65,20 +69,18 @@ cancelMaybe list = case list of
 
 
 --give a position you want to go, then give the move that you can go there (14,4)
+-- This is one of the important function of my greedyV1 ideas
 goToPoint :: [Int] -> Moves -> Move
 goToPoint p (x:xs)
 --  |fst x - snd x == p  = x
 --  |fst x - snd x /= p = goToPoint p xs
  |(fst x - snd x) `elem` p = x
  |(fst x - snd x) `notElem` p = goToPoint p xs
--- |[(a, b) | a <- (p:ps), b <- (x:xs), fst x - snd x == p]
  |otherwise = (6611178,6611178)
 goToPoint _ _ = (6611178,6611178)
 
 --a position that can bolt black
 
--- (a,b)
--- |fst(a,b)-snd(a,b)==9 = (a,b)
 block :: [Point] -> [Int]
 block pt
   |Just(White,1) `elem` pt = map (+1)  (elemIndices (Just(White,1)) pt)
@@ -90,16 +92,39 @@ blot pt
   |otherwise = [6611178]
 
 
+--greedyBotV1 ends here. And greedyBotV2 that using scoring starts here
+
+scoreBeenEaten :: State -> Int
+scoreBeenEaten s@(State st (Board pt wb bb) tn ml wp bp ws bs)
+ |wb > 0 = -50
+ |otherwise = 0
+
+scoreEat :: State -> Int
+scoreEat s@(State st (Board pt wb bb) tn ml wp bp ws bs)
+ |bb > 0 = 50
+ |otherwise = 0
 
 
---[(heuristic score, move)]
+scoreGoodMove :: State -> Int
+scoreGoodMove s@(State st (Board pt wb bb) tn ml wp bp ws bs)
+ |bp - wp >= 24 = 50
+ |otherwise = 0
+
+scorePoint :: [Point] -> Int
+scorePoint (p:ps) = case p of
+  Just(Black,1) -> 50 + scorePoint ps
+  Just(White,1) -> -50 + scorePoint ps
+  Just(White,2) -> 9 + scorePoint ps
+  Just(White,3) -> 9 + scorePoint ps
+  Just(White,4) -> 5 + scorePoint ps
+  Just(White,n)
+            |n>=5 -> 1 + scorePoint ps
+  _ -> 0
+
+
+-- This is actually the main heuristics for greedyBotV2, minimax and a-b punning.
 scoreState :: State -> Int
-scoreState s@(State st (Board pt wb bb) tn ml wp bp ws bs)
-  |wb > 0 = -100
-  |bb > 0 = 50
-  |bp - wp >= 24 = 100
-  |Just(White,1) `elem` pt = -50
-  |otherwise = 0
+scoreState s@(State st (Board pt wb bb) tn ml wp bp ws bs) = bPips s - wPips s + scoreBeenEaten s + scoreEat s + scoreGoodMove s + scorePoint pt
 
 listofMove :: State -> Moves -> [(Int,Move)]
 listofMove s@(State st (Board pt wb bb) tn ml wp bp ws bs) (m:ms) = (scoreState (performSingleMove s m),m):listofMove s ms
@@ -117,6 +142,21 @@ stateCompare s1 s2
   |scoreState s1 >= scoreState s2 = s1
   |scoreState s1 < scoreState s2 = s2
   |otherwise = s1
+
+
+--Minimax bot starts here. Inspired by Tony's lecture and his lecture code
+-- data Tree (a,b) = Node (a,b) [Tree (a,b)]
+-- roseTree :: (a -> [a]) -> a -> Tree a
+-- roseTree fun a = Node a (map (roseTree fun) (fun a))
+--
+-- treeElem :: State -> Moves -> [(State,Int)]
+-- treeElem s (m:ms) = (s,scoreState (performSingleMove s m)):treeElem s ms
+-- treeElem s _ = [(s,0)]
+--
+-- gameTree :: (a) -> Tree (a,b)
+-- gameTree = roseTree treeElem
+
+
 
 --  |(Black,1) `elem` pt = (Black,1)!!pt
 --   |stateCompare s1 s2 == s1 = head(legalMoves s)
