@@ -3,6 +3,7 @@ module PlayAsWhite where
 import State
 import Move
 import Data.List
+import Data.Tree
 import Board
 import Player
 import Debug.Trace
@@ -61,7 +62,6 @@ findFurthest pt =
   x:xs -> 24 - head(elemIndices White (map fst(reverse (cancelMaybe pt))))
   [] -> 24
 
---My friend Kalai helped me with this function to solve the maybe type issue
 cancelMaybe::[Point]->[(Player, Int)]
 cancelMaybe list = case list of
  [] -> []
@@ -127,9 +127,14 @@ scorePoint [] = 0
 scoreState :: State -> Int
 scoreState s@(State st (Board pt wb bb) tn ml wp bp ws bs) = (bp - wp) + scoreBeenEaten s + scoreEat s + scoreGoodMove s + scorePoint pt
 
+
 listofMove :: State -> Moves -> [(Int,Move)]
 listofMove s@(State st (Board pt wb bb) tn ml wp bp ws bs) (m:ms) = (scoreState (performSingleMove s m),m):listofMove s ms
 listofMove s _ = [(0,head (legalMoves s))]
+
+-- newState :: State -> [State]
+-- newState s = map (performSingleMove s) (legalMoves s)
+
 
 bestMove :: [(Int,Move)] -> Move
 bestMove bm = snd(maximum bm)
@@ -147,14 +152,38 @@ stateCompare s1 s2
 
 --Minimax bot starts here. Inspired by Tony's lecture and his lecture code
 -- data Tree a = Node a [Tree a]
+
+
 -- roseTree :: (a -> [a]) -> a -> Tree a
 -- roseTree fun a = Node a (map (roseTree fun) (fun a))
 --
 -- treeElem :: State -> Moves -> [State]
 -- treeElem s (m:ms) =  performSingleMove s m:treeElem s ms
+
 --
 -- gameTree :: State -> Tree State
--- gameTree s = Node s (map (legalMovesTree (map (performSingleMove s) (legalMovesTree s))))
+-- gameTree s = Node s (map (legalMovesTree.performSingleMove s) (legalMoves s))
+--
+-- pruning :: Int -> Tree a -> Tree a
+-- pruning _ (Node a []) = Node a []
+-- pruning 0 (Node a list) = Node a []
+-- pruning n (Node a list) = Node a (map (pruning (n - 1)) list)
+--
+-- treeMap :: (a -> b) -> Tree a -> Tree b
+-- treeMap fun rt = case rt of
+--   Node a [] -> Node (fun a) []
+--   Node a r -> Node (fun a) (map(treeMap fun) r)
+--
+-- maximise :: (Ord a) => Tree a -> a
+-- maximise (Node a []) = a
+-- maximise (Node a sub) = maximum (map minimise sub)
+--
+-- minimise :: (Ord a) => Tree a -> a
+-- minimise (Node a []) = a
+-- minimise (Node a sub) = minimum (map maximise sub)
+--
+-- minimax ::  Int -> State -> Int
+-- minimax lh s = (maximise . treeMap scorePoint s. pruning lh . gameTree) s
 --
 -- winValue :: State -> Int
 -- winValue s@(State st (Board pt wb bb) tn ml wp bp ws bs)
@@ -163,15 +192,6 @@ stateCompare s1 s2
 --  |otherwise =0
 
 
---  |(Black,1) `elem` pt = (Black,1)!!pt
---   |stateCompare s1 s2 == s1 = head(legalMoves s)
---
---   where
---   s1::State
---   s1= performSingleMove s (head(legalMoves s))
---
---   s2::State
---   s2= performSingleMove s (last(legalMoves s))
 primesUnder :: Int -> Int
 primesUnder n = length $ filterPrime [2 .. n]
   where
