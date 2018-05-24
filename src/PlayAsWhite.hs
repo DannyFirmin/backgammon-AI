@@ -96,12 +96,12 @@ blot pt
 
 scoreBeenEaten :: State -> Int
 scoreBeenEaten s@(State st (Board pt wb bb) tn ml wp bp ws bs)
- |wb > 0 = -50
+ |wb > 0 = -100
  |otherwise = 0
 
 scoreEat :: State -> Int
 scoreEat s@(State st (Board pt wb bb) tn ml wp bp ws bs)
- |bb > 0 = 50
+ |bb > 0 = 90
  |otherwise = 0
 
 
@@ -112,14 +112,15 @@ scoreGoodMove s@(State st (Board pt wb bb) tn ml wp bp ws bs)
 
 scorePoint :: [Point] -> Int
 scorePoint (p:ps) = case p of
-  Just(Black,1) -> 50 + scorePoint ps
-  Just(White,1) -> -50 + scorePoint ps
-  Just(White,2) -> 9 + scorePoint ps
-  Just(White,3) -> 9 + scorePoint ps
-  Just(White,4) -> 5 + scorePoint ps
+  Just(Black,1) -> 10 + scorePoint ps
+  Just(White,1) -> -100 + scorePoint ps
+  Just(White,2) -> 3 + scorePoint ps
+  Just(White,3) -> 2 + scorePoint ps
+  Just(White,4) -> 1 + scorePoint ps
   Just(White,n)
-            |n>=5 -> 1 + scorePoint ps
+            |n>=4 -> 0 + scorePoint ps
   _ -> 0
+
 
 
 -- This is actually the main heuristics for greedyBotV2, minimax and a-b punning.
