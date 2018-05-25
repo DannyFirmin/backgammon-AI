@@ -108,12 +108,14 @@ cancelMaybe list = case list of
  (Nothing:xs) -> (Black,0):cancelMaybe xs
  (Just x:xs) -> x:cancelMaybe xs
 
---give a position you want to go, then give the move that you can go there (14,4)
+--give a position you want to go, then give the move that you can go there
 -- This is one of the important function of my greedyV1 ideas
 goToPoint :: [Int] -> Moves -> Move
 goToPoint p (x:xs)
 --  |fst x - snd x == p  = x
 --  |fst x - snd x /= p = goToPoint p xs
+-- Above is what I previously did. I only find one possible move but not all
+-- Below is what I improve. I keep this improvement because I think it is interesting
  |(fst x - snd x) `elem` p = x
  |(fst x - snd x) `notElem` p = goToPoint p xs
  |otherwise = (6611178,6611178)
@@ -204,12 +206,12 @@ minimaxV1 lh = maximise . treeMap scoreState. pruning lh . gameTree
 rootV1 :: State -> Lookahead -> Move
 rootV1 s n = snd $ maximum results
   where
-  results = zip (map (minimaxV1 (n * 2)) (listofNewState s)) (legalMoves s)
+  results = zip (map (minimaxV1 n) (listofNewState s)) (legalMoves s)
 
 rootV2 :: State -> Lookahead -> Move
 rootV2 s n = snd $ maximum results
   where
-  results = zip (map (minimaxV2 (n * 2)) (listofNewState s)) (legalMoves s)
+  results = zip (map (minimaxV2 n) (listofNewState s)) (legalMoves s)
 
 minimaxV2 :: Lookahead -> State -> Int
 minimaxV2 0 s = scoreState s
@@ -225,7 +227,7 @@ minimaxV2 n s =
 
 -- probDiceRolls :: [((Int,Int), Double)]
 -- probDiceRolls = [((x,y), p) |  x <- [1..6], y <- [x..6], let p = if x == y then 1/36 else 1/18]
---
+-- -- probability function was helped by one of the tutor but I didn't finished my expMiniMax
 -- nextRolls :: State -> [(State, Double)]
 -- nextRolls s = [ (s', probability) | ((dice1,dice2),probability) <- probDiceRolls
 --               , let s' = (swapTurn s) {movesLeft = if dice1 == dice2
