@@ -6,14 +6,15 @@ import Data.List
 import Data.Tree
 import Board
 import Player
-import Debug.Trace
---(trace,traceShowId)
+-- import Debug.Trace (trace,traceShowId)
 
 makeMove :: State -> Lookahead -> Moves
 makeMove s l
   | primesUnder (l * l) < 0 = []
   | otherwise =
-      greedyBotV2 s movesLeft
+     -- greedyBotV3 s (correspondData s)
+      minimaxBot2 s l
+     --greedyBotV1 s movesLeft
 
 legalMoveBot::State ->  (State -> [Int]) -> Moves
 legalMoveBot s f =
@@ -38,12 +39,59 @@ greedyBotV1 s f =
 greedyBotV2 :: State -> (State -> [Int]) -> Moves
 greedyBotV2 s f =
  case legalMoves s of
-    x:xs -> traceShow s $ combine s:greedyBotV2 s' f
+    x:xs -> combine s:greedyBotV2 s' f
     [] -> []
 
     where
     s'::State
     s' = performSingleMove s (combine s)
+
+greedyBotV3 :: State -> ([Int] ,[Move]) -> Moves
+greedyBotV3 s corres = case corres of
+     ([], [])     -> []
+     (score, move) -> (move !! bestPositionIndex score 0) : greedyBotV3 s' corres'
+
+     where
+            s' :: State
+            s' = performSingleMove s (legalMoves s !! bestPositionIndex (scoreEachState s) 0)
+            corres' = correspondData s'
+
+minimaxBot :: State -> Lookahead -> Moves
+minimaxBot s l =
+ case legalMoves s of
+    x:xs -> root s l: minimaxBot s' l
+    [] -> []
+
+    where
+    s'::State
+    s' = performSingleMove s (root s l)
+
+minimaxBot2 :: State -> Lookahead -> Moves
+minimaxBot2 s l =
+ case legalMoves s of
+    x:xs -> root2 s l: minimaxBot s' l
+    [] -> []
+
+    where
+    s'::State
+    s' = performSingleMove s (root2 s l)
+
+bestPositionIndex :: [Int] -> Int -> Int
+bestPositionIndex list index = case list of
+   x:xs | x == maximum list -> index
+        | otherwise   -> bestPositionIndex xs (index + 1)
+   [] -> 0
+
+correspondData :: State -> ([Int],[Move])
+correspondData s = (scoreEachState s , legalMoves s)
+
+-- bestMove2 :: ([Int],[Move]) -> Move
+-- bestMove2 (i,m) = (elemIndices (maximum i) i)
+
+
+scoreEachState :: State -> [Int]
+scoreEachState s = map scoreState (listofNewState s)
+
 
 --This is the heuristics for my greedyBotV1,
 -- using my creative, simple but effective idea different from the evaluate idea that all the students have
@@ -125,15 +173,17 @@ scorePoint [] = 0
 
 -- This is actually the main heuristics for greedyBotV2, minimax and a-b punning.
 scoreState :: State -> Int
-scoreState s@(State st (Board pt wb bb) tn ml wp bp ws bs) = (bp - wp) + scoreBeenEaten s + scoreEat s + scoreGoodMove s + scorePoint pt
+scoreState s@(State st (Board pt wb bb) tn ml wp bp ws bs) = (bp - wp)*2 + scoreBeenEaten s + scoreEat s + scoreGoodMove s + scorePoint pt
+
+
+listofNewState :: State -> [State]
+listofNewState s = map (performSingleMove s) (legalMoves s)
 
 
 listofMove :: State -> Moves -> [(Int,Move)]
 listofMove s@(State st (Board pt wb bb) tn ml wp bp ws bs) (m:ms) = (scoreState (performSingleMove s m),m):listofMove s ms
 listofMove s _ = [(0,head (legalMoves s))]
 
--- newState :: State -> [State]
--- newState s = map (performSingleMove s) (legalMoves s)
 
 
 bestMove :: [(Int,Move)] -> Move
@@ -143,57 +193,69 @@ combine :: State -> Move
 combine s = bestMove(listofMove s (legalMoves s))
 
 
-stateCompare :: State -> State -> State
-stateCompare s1 s2
-  |scoreState s1 >= scoreState s2 = s1
-  |scoreState s1 < scoreState s2 = s2
-  |otherwise = s1
-
 
 --Minimax bot starts here. Inspired by Tony's lecture and his lecture code
--- data Tree a = Node a [Tree a]
+roseTree :: (a -> [a]) -> a -> Tree a
+roseTree fun a = Node a (map (roseTree fun) (fun a))
+
+treeElem :: State -> Moves -> [State]
+treeElem s (m:ms) =  performSingleMove s m:treeElem s ms
 
 
--- roseTree :: (a -> [a]) -> a -> Tree a
--- roseTree fun a = Node a (map (roseTree fun) (fun a))
---
--- treeElem :: State -> Moves -> [State]
--- treeElem s (m:ms) =  performSingleMove s m:treeElem s ms
+gameTree :: State -> Tree State
+gameTree s = Node s (map (legalMovesTree.performSingleMove s) (legalMoves s))
 
---
--- gameTree :: State -> Tree State
--- gameTree s = Node s (map (legalMovesTree.performSingleMove s) (legalMoves s))
---
--- pruning :: Int -> Tree a -> Tree a
--- pruning _ (Node a []) = Node a []
--- pruning 0 (Node a list) = Node a []
--- pruning n (Node a list) = Node a (map (pruning (n - 1)) list)
---
--- treeMap :: (a -> b) -> Tree a -> Tree b
--- treeMap fun rt = case rt of
---   Node a [] -> Node (fun a) []
---   Node a r -> Node (fun a) (map(treeMap fun) r)
---
--- maximise :: (Ord a) => Tree a -> a
--- maximise (Node a []) = a
--- maximise (Node a sub) = maximum (map minimise sub)
---
--- minimise :: (Ord a) => Tree a -> a
--- minimise (Node a []) = a
--- minimise (Node a sub) = minimum (map maximise sub)
---
--- minimax ::  Int -> State -> Int
--- minimax lh s = (maximise . treeMap scorePoint s. pruning lh . gameTree) s
---
--- winValue :: State -> Int
--- winValue s@(State st (Board pt wb bb) tn ml wp bp ws bs)
---  |wp == 0 = 1
---  |bp == 0 = -1
---  |otherwise =0
+pruning :: Int -> Tree a -> Tree a
+pruning _ (Node a []) = Node a []
+pruning 0 (Node a list) = Node a []
+pruning n (Node a list) = Node a (map (pruning (n - 1)) list)
 
+treeMap :: (a -> b) -> Tree a -> Tree b
+treeMap fun rt = case rt of
+  Node a [] -> Node (fun a) []
+  Node a r -> Node (fun a) (map(treeMap fun) r)
+
+maximise :: (Ord a) => Tree a -> a
+maximise (Node a []) = a
+maximise (Node a sub) = maximum (map minimise sub)
+
+minimise :: (Ord a) => Tree a -> a
+minimise (Node a []) = a
+minimise (Node a sub) = minimum (map maximise sub)
+
+minimax :: Lookahead -> State -> Int
+minimax lh = maximise . treeMap scoreState. pruning lh . gameTree
 
 primesUnder :: Int -> Int
 primesUnder n = length $ filterPrime [2 .. n]
   where
     filterPrime [] = []
     filterPrime (p:xs) = p : filterPrime [x | x <- xs, x `mod` p /= 0]
+
+
+root :: State -> Lookahead -> Move
+root s n = bestMoves
+  where
+  listOfStates = map (performSingleMove s) (legalMoves s)
+  results = zip (map (minimax (n * 2)) listOfStates) (legalMoves s)
+  bestMoves = snd $ maximum results
+
+root2 :: State -> Lookahead -> Move
+root2 s n = bestMoves
+  where
+  listOfStates = map (performSingleMove s) (legalMoves s)
+  results = zip (map (agent (n * 2)) listOfStates) (legalMoves s)
+  bestMoves = snd $ maximum results
+
+
+agent :: Lookahead -> State -> Int
+agent 0 s = scoreState s
+agent n s =
+    case turn s of
+        White -> case map (agent (n-1)) (listofNewState s) of
+            [] -> 0
+            _ -> maximum (map (agent (n-1)) (listofNewState s))
+
+        Black -> case map (agent (n-1)) (listofNewState s) of
+            [] -> 0
+            _ -> minimum (map (agent (n-1)) (listofNewState s))
