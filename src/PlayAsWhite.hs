@@ -10,10 +10,10 @@ import Player
 
 makeMove :: State -> Lookahead -> Moves
 makeMove s@(State st (Board pt wb bb) tn ml wp bp ws bs) l
-  | primesUnder (l * l) < 0 = []
-  | (wb - bp) >= 40 = minimaxBotV1 s l
-  | otherwise = greedyBotV3 s (correspondData s)
-     --greedyBotV1 s movesLeft
+    | primesUnder (l * l) < 0 = []
+    | (wb - bp) >= 10 = minimaxBotV2 s l
+    | otherwise = greedyBotV3 s (correspondData s)
+
 
 legalMoveBot::State ->  (State -> [Int]) -> Moves
 legalMoveBot s f =
