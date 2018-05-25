@@ -11,7 +11,7 @@ import Player
 makeMove :: State -> Lookahead -> Moves
 makeMove s@(State _ (Board _ wb _) _ _ _ bp _ _) l
     | primesUnder (l * l) < 0 = []
-    | (wb - bp) >= 10 =  minimaxBotV2 s l
+  --  | (wb - bp) >= 10 =  minimaxBotV2 s l
     | otherwise = greedyBotV3 s (correspondData s)
 
 primesUnder :: Int -> Int
@@ -20,29 +20,29 @@ primesUnder n = length $ filterPrime [2 .. n]
     filterPrime [] = []
     filterPrime (p:xs) = p : filterPrime [x | x <- xs, x `mod` p /= 0]
 
-legalMoveBot::State ->  (State -> [Int]) -> Moves
-legalMoveBot s f =
+legalMoveBot::State -> Moves
+legalMoveBot s =
   case legalMoves s of
       [] -> []
-      _ -> head (legalMoves s):legalMoveBot s' f
+      _ -> head (legalMoves s):legalMoveBot s'
    where
    s'::State
    s' = performSingleMove s (head (legalMoves s))
 
-greedyBotV1 :: State -> (State -> [Int]) -> Moves
-greedyBotV1 s f =
+greedyBotV1 :: State -> Moves
+greedyBotV1 s  =
  case legalMoves s of
     [] -> []
-    _ -> greedyHeuristics s:greedyBotV1 s' f
+    _ -> greedyHeuristics s:greedyBotV1 s'
     where
     s'::State
     s' = performSingleMove s (greedyHeuristics s)
 
-greedyBotV2 :: State -> (State -> [Int]) -> Moves
-greedyBotV2 s f =
+greedyBotV2 :: State  -> Moves
+greedyBotV2 s =
  case legalMoves s of
     [] -> []
-    _ -> combine s:greedyBotV2 s' f
+    _ -> combine s:greedyBotV2 s'
     where
     s'::State
     s' = performSingleMove s (combine s)
@@ -159,7 +159,7 @@ scorePoint [] = 0
 
 -- This is actually the main heuristics for greedyBotV2 V3 and minimax
 scoreState :: State -> Int
-scoreState s@(State _ (Board pt _ _) _ _ wp bp _ _) = (bp - wp)*2 + scoreBeenEaten s + scoreEat s + scoreGoodMove s + scorePoint pt
+scoreState s@(State _ (Board pt _ _) _ _ wp bp _ _) = (bp - wp)-- + scoreBeenEaten s + scoreEat s + scoreGoodMove s + scorePoint pt
 
 listofNewState :: State -> [State]
 listofNewState s = map (performSingleMove s) (legalMoves s)
@@ -222,3 +222,18 @@ minimaxV2 n s =
         Black -> case map (minimaxV2 (n-1)) (listofNewState s) of
             [] -> 0
             _ -> minimum (map (minimaxV2 (n-1)) (listofNewState s))
+
+-- probDiceRolls :: [((Int,Int), Double)]
+-- probDiceRolls = [((x,y), p) |  x <- [1..6], y <- [x..6], let p = if x == y then 1/36 else 1/18]
+--
+-- nextRolls :: State -> [(State, Double)]
+-- nextRolls s = [ (s', probability) | ((dice1,dice2),probability) <- probDiceRolls
+--               , let s' = (swapTurn s) {movesLeft = if dice1 == dice2
+--                                                    then [dice1,dice1,dice1,dice1]
+--                                                    else [dice1, dice2]} ]
+-- expMiniMax :: Lookahead -> State -> Double
+-- expMiniMax 0 s = fromIntegral(scoreState s)
+-- expMiniMax n s =
+--    case turn s of
+--   White -> zip (map (expMiniMax (n * 2)) (listofNewState s)) (legalMoves s) , probabilty)
+--   Black -> zip (map (expMiniMax (n * 2)) (listofNewState s)) (legalMoves s), probabilty)

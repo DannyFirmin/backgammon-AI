@@ -11,7 +11,7 @@ import Player
 makeMove :: State -> Lookahead -> Moves
 makeMove s l
     | primesUnder (l * l) < 0 = []
-    | otherwise = legalMoveBot s movesLeft
+    | otherwise =  legalMoveBot s
 
 primesUnder :: Int -> Int
 primesUnder n = length $ filterPrime [2 .. n]
@@ -19,30 +19,29 @@ primesUnder n = length $ filterPrime [2 .. n]
     filterPrime [] = []
     filterPrime (p:xs) = p : filterPrime [x | x <- xs, x `mod` p /= 0]
 
-legalMoveBot::State ->  (State -> [Int]) -> Moves
-legalMoveBot s f =
+legalMoveBot::State -> Moves
+legalMoveBot s =
   case legalMoves s of
       [] -> []
-      _ -> head (legalMoves s):legalMoveBot s' f
+      _ -> head (legalMoves s):legalMoveBot s'
    where
    s'::State
    s' = performSingleMove s (head (legalMoves s))
 
-greedyBotV1 :: State -> (State -> [Int]) -> Moves
-greedyBotV1 s f =
+greedyBotV1 :: State -> Moves
+greedyBotV1 s  =
  case legalMoves s of
     [] -> []
-    _ -> greedyHeuristics s:greedyBotV1 s' f
+    _ -> greedyHeuristics s:greedyBotV1 s'
     where
     s'::State
     s' = performSingleMove s (greedyHeuristics s)
 
-greedyBotV2 :: State -> (State -> [Int]) -> Moves
-greedyBotV2 s f =
+greedyBotV2 :: State  -> Moves
+greedyBotV2 s =
  case legalMoves s of
     [] -> []
-    _ -> combine s:greedyBotV2 s' f
-
+    _ -> combine s:greedyBotV2 s'
     where
     s'::State
     s' = performSingleMove s (combine s)
@@ -51,7 +50,6 @@ greedyBotV3 :: State -> ([Int] ,[Move]) -> Moves
 greedyBotV3 s corres = case corres of
      ([], [])     -> []
      (score, move) -> (move !! bestPositionIndex score 0) : greedyBotV3 s' corres'
-
      where
             s' :: State
             s' = performSingleMove s (legalMoves s !! bestPositionIndex (scoreEachState s) 0)
@@ -62,7 +60,6 @@ minimaxBotV1 s l =
  case legalMoves s of
     [] -> []
     _ -> rootV1 s l: minimaxBotV1 s' l
-
     where
     s'::State
     s' = performSingleMove s (rootV1 s l)
@@ -72,7 +69,6 @@ minimaxBotV2 s l =
  case legalMoves s of
     [] -> []
     _ -> rootV2 s l: minimaxBotV2 s' l
-
     where
     s'::State
     s' = performSingleMove s (rootV2 s l)
@@ -86,10 +82,8 @@ bestPositionIndex list index = case list of
 correspondData :: State -> ([Int],[Move])
 correspondData s = (scoreEachState s , legalMoves s)
 
-
 scoreEachState :: State -> [Int]
 scoreEachState s = map scoreState (listofNewState s)
-
 
 --This is the heuristics for my greedyBotV1,
 -- using my creative, simple but effective idea different from the evaluate idea that all the students have
@@ -113,7 +107,6 @@ cancelMaybe list = case list of
  (Nothing:xs) -> (Black,0):cancelMaybe xs
  (Just x:xs) -> x:cancelMaybe xs
 
-
 --give a position you want to go, then give the move that you can go there (14,4)
 -- This is one of the important function of my greedyV1 ideas
 goToPoint :: [Int] -> Moves -> Move
@@ -126,7 +119,6 @@ goToPoint p (x:xs)
 goToPoint _ _ = (6611178,6611178)
 
 --a position that can bolt black
-
 block :: [Point] -> [Int]
 block pt
   |Just(White,1) `elem` pt = map (+1)  (elemIndices (Just(White,1)) pt)
@@ -149,7 +141,6 @@ scoreEat (State _ (Board _ _ bb) _ _ _ _ _ _)
  |bb > 0 = 100
  |otherwise = 0
 
-
 scoreGoodMove :: State -> Int
 scoreGoodMove (State _ _ _ _ wp bp _ _)
  |bp - wp >= 24 = 50
@@ -162,7 +153,6 @@ scorePoint (p:ps) = case p of
   Just(White,2) -> 3 + scorePoint ps
   Just(White,n)
             |n>=7 -> 1 + scorePoint ps
-
   _ -> 0
 scorePoint [] = 0
 
@@ -183,7 +173,9 @@ bestMove bm = snd(maximum bm)
 combine :: State -> Move
 combine s = bestMove(listofMove s (legalMoves s))
 
---Minimax bot starts here. V1 is inspired by Tony's lecture and his lecture code
+--Minimax bot starts here. minimaxV1 is inspired by Tony's lecture and his lecture code.
+--https://cs.anu.edu.au/courses/comp1100/lectures/11/
+--minimaxV2 is my own version that I rewrote it completely and it can beat minimaxV1
 gameTree :: State -> Tree State
 gameTree s = Node s (map (legalMovesTree.performSingleMove s) (legalMoves s))
 
@@ -212,7 +204,6 @@ rootV1 :: State -> Lookahead -> Move
 rootV1 s n = snd $ maximum results
   where
   results = zip (map (minimaxV1 (n * 2)) (listofNewState s)) (legalMoves s)
-
 
 rootV2 :: State -> Lookahead -> Move
 rootV2 s n = snd $ maximum results
