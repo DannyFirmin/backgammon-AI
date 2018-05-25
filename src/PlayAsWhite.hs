@@ -174,7 +174,9 @@ bestMove bm = snd(maximum bm)
 combine :: State -> Move
 combine s = bestMove(listofMove s (legalMoves s))
 
---Minimax bot starts here. V1 is inspired by Tony's lecture and his lecture code
+--Minimax bot starts here. minimaxV1 is inspired by Tony's lecture and his lecture code.
+--https://cs.anu.edu.au/courses/comp1100/lectures/11/
+--minimaxV2 is my own version that I rewrote it completely and it can beat minimaxV1
 gameTree :: State -> Tree State
 gameTree s = Node s (map (legalMovesTree.performSingleMove s) (legalMoves s))
 
