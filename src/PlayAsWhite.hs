@@ -11,7 +11,7 @@ import Player
 makeMove :: State -> Lookahead -> Moves
 makeMove s@(State _ (Board _ wb _) _ _ _ bp _ _) l
     | primesUnder (l * l) < 0 = []
-  --  | (wb - bp) >= 10 =  minimaxBotV2 s l
+    | (wb - bp) >= 10 =  minimaxBotV2 s l
     | otherwise = greedyBotV3 s (correspondData s)
 
 primesUnder :: Int -> Int
@@ -159,7 +159,7 @@ scorePoint [] = 0
 
 -- This is actually the main heuristics for greedyBotV2 V3 and minimax
 scoreState :: State -> Int
-scoreState s@(State _ (Board pt _ _) _ _ wp bp _ _) = (bp - wp)-- + scoreBeenEaten s + scoreEat s + scoreGoodMove s + scorePoint pt
+scoreState s@(State _ (Board pt _ _) _ _ wp bp _ _) = (bp - wp) + scoreBeenEaten s + scoreEat s + scoreGoodMove s + scorePoint pt
 
 listofNewState :: State -> [State]
 listofNewState s = map (performSingleMove s) (legalMoves s)
