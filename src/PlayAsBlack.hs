@@ -6,31 +6,33 @@ import Data.List
 import Data.Tree
 import Board
 import Player
--- import Debug.Trace (trace,traceShowId)
+-- import Debug.Trace -- (trace,traceShowId)
 
 makeMove :: State -> Lookahead -> Moves
-makeMove s@(State st (Board pt wb bb) tn ml wp bp ws bs) l
-  | primesUnder (l * l) < 0 = []
---   | (wb - bp) >= 40 = minimaxBotV2 s l
-  | otherwise = greedyBotV3 s (correspondData s)
-     --greedyBotV1 s movesLeft
+makeMove s l
+    | primesUnder (l * l) < 0 = []
+    | otherwise = legalMoveBot s movesLeft
+
+primesUnder :: Int -> Int
+primesUnder n = length $ filterPrime [2 .. n]
+  where
+    filterPrime [] = []
+    filterPrime (p:xs) = p : filterPrime [x | x <- xs, x `mod` p /= 0]
 
 legalMoveBot::State ->  (State -> [Int]) -> Moves
 legalMoveBot s f =
   case legalMoves s of
-      x:xs -> head (legalMoves s):legalMoveBot s' f
       [] -> []
+      _ -> head (legalMoves s):legalMoveBot s' f
    where
    s'::State
    s' = performSingleMove s (head (legalMoves s))
 
-
 greedyBotV1 :: State -> (State -> [Int]) -> Moves
 greedyBotV1 s f =
  case legalMoves s of
-    x:xs -> greedyHeuristics s:greedyBotV1 s' f
     [] -> []
-
+    _ -> greedyHeuristics s:greedyBotV1 s' f
     where
     s'::State
     s' = performSingleMove s (greedyHeuristics s)
@@ -38,8 +40,8 @@ greedyBotV1 s f =
 greedyBotV2 :: State -> (State -> [Int]) -> Moves
 greedyBotV2 s f =
  case legalMoves s of
-    x:xs -> combine s:greedyBotV2 s' f
     [] -> []
+    _ -> combine s:greedyBotV2 s' f
 
     where
     s'::State
@@ -58,8 +60,8 @@ greedyBotV3 s corres = case corres of
 minimaxBotV1 :: State -> Lookahead -> Moves
 minimaxBotV1 s l =
  case legalMoves s of
-    x:xs -> rootV1 s l: minimaxBotV1 s' l
     [] -> []
+    _ -> rootV1 s l: minimaxBotV1 s' l
 
     where
     s'::State
@@ -68,8 +70,8 @@ minimaxBotV1 s l =
 minimaxBotV2 :: State -> Lookahead -> Moves
 minimaxBotV2 s l =
  case legalMoves s of
-    x:xs -> rootV2 s l: minimaxBotV2 s' l
     [] -> []
+    _ -> rootV2 s l: minimaxBotV2 s' l
 
     where
     s'::State
@@ -84,9 +86,6 @@ bestPositionIndex list index = case list of
 correspondData :: State -> ([Int],[Move])
 correspondData s = (scoreEachState s , legalMoves s)
 
--- bestMove2 :: ([Int],[Move]) -> Move
--- bestMove2 (i,m) = (elemIndices (maximum i) i)
-
 
 scoreEachState :: State -> [Int]
 scoreEachState s = map scoreState (listofNewState s)
@@ -96,7 +95,7 @@ scoreEachState s = map scoreState (listofNewState s)
 -- using my creative, simple but effective idea different from the evaluate idea that all the students have
 -- This is the heuristic only for the greedyBotV1
 greedyHeuristics :: State -> Move
-greedyHeuristics s@(State st (Board pt wb bb) tn ml wp bp ws bs)
+greedyHeuristics s@(State _ (Board pt _ _) _ ml _ _ _ _)
  |block pt /= [6611178] && goToPoint (block pt) (legalMoves s) /= (6611178,6611178) = goToPoint (block pt) (legalMoves s)
  |blot pt /= [6611178] && goToPoint (blot pt) (legalMoves s) /= (6611178,6611178) = goToPoint (blot pt) (legalMoves s)
  |ml /= [] && isLegalMove s (findFurthest pt,head ml)= (findFurthest pt,head ml)
@@ -105,9 +104,8 @@ greedyHeuristics s@(State st (Board pt wb bb) tn ml wp bp ws bs)
 findFurthest :: [Point] -> Int
 findFurthest pt =
  case elemIndices White (map fst(reverse (cancelMaybe pt))) of
-
-  x:xs -> 24 - head(elemIndices White (map fst(reverse (cancelMaybe pt))))
   [] -> 24
+  _ -> 24 - head(elemIndices White (map fst(reverse (cancelMaybe pt))))
 
 cancelMaybe::[Point]->[(Player, Int)]
 cancelMaybe list = case list of
@@ -139,22 +137,21 @@ blot pt
   |Just(Black,1) `elem` pt = map (+1) (elemIndices (Just(Black,1)) pt)
   |otherwise = [6611178]
 
-
 --greedyBotV1 ends here. And greedyBotV2 that using scoring starts here
 
 scoreBeenEaten :: State -> Int
-scoreBeenEaten s@(State st (Board pt wb bb) tn ml wp bp ws bs)
+scoreBeenEaten (State _ (Board _ wb _) _ _ _ _ _ _)
  |wb > 0 = -100
  |otherwise = 0
 
 scoreEat :: State -> Int
-scoreEat s@(State st (Board pt wb bb) tn ml wp bp ws bs)
+scoreEat (State _ (Board _ _ bb) _ _ _ _ _ _)
  |bb > 0 = 100
  |otherwise = 0
 
 
 scoreGoodMove :: State -> Int
-scoreGoodMove s@(State st (Board pt wb bb) tn ml wp bp ws bs)
+scoreGoodMove (State _ _ _ _ wp bp _ _)
  |bp - wp >= 24 = 50
  |otherwise = 0
 
@@ -169,21 +166,16 @@ scorePoint (p:ps) = case p of
   _ -> 0
 scorePoint [] = 0
 
-
--- This is actually the main heuristics for greedyBotV2, minimax and a-b punning.
+-- This is actually the main heuristics for greedyBotV2 V3 and minimax
 scoreState :: State -> Int
-scoreState s@(State st (Board pt wb bb) tn ml wp bp ws bs) = -((bp - wp)*2 + scoreBeenEaten s + scoreEat s + scoreGoodMove s + scorePoint pt)
-
+scoreState s@(State _ (Board pt _ _) _ _ wp bp _ _) = -((bp - wp)*2 + scoreBeenEaten s + scoreEat s + scoreGoodMove s + scorePoint pt)
 
 listofNewState :: State -> [State]
 listofNewState s = map (performSingleMove s) (legalMoves s)
 
-
 listofMove :: State -> Moves -> [(Int,Move)]
-listofMove s@(State st (Board pt wb bb) tn ml wp bp ws bs) (m:ms) = (scoreState (performSingleMove s m),m):listofMove s ms
+listofMove s (m:ms) = (scoreState (performSingleMove s m),m):listofMove s ms
 listofMove s _ = [(0,head (legalMoves s))]
-
-
 
 bestMove :: [(Int,Move)] -> Move
 bestMove bm = snd(maximum bm)
@@ -191,22 +183,13 @@ bestMove bm = snd(maximum bm)
 combine :: State -> Move
 combine s = bestMove(listofMove s (legalMoves s))
 
-
-
---Minimax bot starts here. Inspired by Tony's lecture and his lecture code
-roseTree :: (a -> [a]) -> a -> Tree a
-roseTree fun a = Node a (map (roseTree fun) (fun a))
-
-treeElem :: State -> Moves -> [State]
-treeElem s (m:ms) =  performSingleMove s m:treeElem s ms
-
-
+--Minimax bot starts here. V1 is inspired by Tony's lecture and his lecture code
 gameTree :: State -> Tree State
 gameTree s = Node s (map (legalMovesTree.performSingleMove s) (legalMoves s))
 
 pruning :: Int -> Tree a -> Tree a
 pruning _ (Node a []) = Node a []
-pruning 0 (Node a list) = Node a []
+pruning 0 (Node a _) = Node a []
 pruning n (Node a list) = Node a (map (pruning (n - 1)) list)
 
 treeMap :: (a -> b) -> Tree a -> Tree b
@@ -216,21 +199,14 @@ treeMap fun rt = case rt of
 
 maximise :: (Ord a) => Tree a -> a
 maximise (Node a []) = a
-maximise (Node a sub) = maximum (map minimise sub)
+maximise (Node _ sub) = maximum (map minimise sub)
 
 minimise :: (Ord a) => Tree a -> a
 minimise (Node a []) = a
-minimise (Node a sub) = minimum (map maximise sub)
+minimise (Node _ sub) = minimum (map maximise sub)
 
 minimaxV1 :: Lookahead -> State -> Int
 minimaxV1 lh = maximise . treeMap scoreState. pruning lh . gameTree
-
-primesUnder :: Int -> Int
-primesUnder n = length $ filterPrime [2 .. n]
-  where
-    filterPrime [] = []
-    filterPrime (p:xs) = p : filterPrime [x | x <- xs, x `mod` p /= 0]
-
 
 rootV1 :: State -> Lookahead -> Move
 rootV1 s n = snd $ maximum results
@@ -242,7 +218,6 @@ rootV2 :: State -> Lookahead -> Move
 rootV2 s n = snd $ maximum results
   where
   results = zip (map (minimaxV2 (n * 2)) (listofNewState s)) (legalMoves s)
-
 
 minimaxV2 :: Lookahead -> State -> Int
 minimaxV2 0 s = scoreState s
