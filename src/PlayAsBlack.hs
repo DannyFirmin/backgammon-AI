@@ -7,5 +7,6 @@ makeMove :: State -> Lookahead -> Moves
 makeMove s l
   | primesUnder (l * l) < 0 = []
   | otherwise =
-        minimaxBot s l
-     -- greedyBotV3 s (correspondData s)
+      legalMoveBot s movesLeft
+      --  minimaxBotV1 s l
+      --greedyBotV3 s (correspondData s)
