@@ -11,7 +11,7 @@ import Player
 makeMove :: State -> Lookahead -> Moves
 makeMove s@(State _ (Board _ wb _) _ _ _ bp _ _) l
     | primesUnder (l * l) < 0 = []
-    | (wb - bp) >= 10 =  minimaxBotV2 s l
+  --  | (wb - bp) >= 10 =  minimaxBotV2 s l
     | otherwise = greedyBotV3 s (correspondData s)
 
 primesUnder :: Int -> Int
